@@ -489,6 +489,7 @@
       }
 
       state.mode = 'solo';
+      state.isHost = true; // Act as host in solo to see End Round button
       state.targetTitle = response.targetArticle.title;
 
       UI.showScreen('screen-game');
@@ -673,7 +674,26 @@
   function hostEndRound() {
     if (!state.isHost) return;
     if (confirm('Are you sure you want to end this round for everyone?')) {
-      state.socket.emit('end-game', () => {});
+      if (state.mode === 'solo') {
+        const elapsed = Date.now() - state.startTime;
+        showResults({
+          startArticle: state.path[0],
+          targetArticle: state.targetTitle,
+          players: [{
+            name: state.playerName,
+            clicks: state.clicks,
+            time: elapsed,
+            finished: false, // Ended early
+            path: state.path,
+            team: null,
+          }],
+          teamResults: null,
+          mode: 'ffa',
+          isSolo: true,
+        });
+      } else {
+        state.socket.emit('end-game', () => {});
+      }
     }
   }
 
@@ -746,9 +766,11 @@
       // Player results
       const playerContainer = document.getElementById('player-results');
       playerContainer.innerHTML = '';
-      results.players.forEach((p, i) => {
-        playerContainer.appendChild(UI.createResultRow(p, i + 1));
-      });
+      if (results.players && Array.isArray(results.players)) {
+        results.players.forEach((p, i) => {
+          playerContainer.appendChild(UI.createResultRow(p, i + 1));
+        });
+      }
 
       // Team results
       const teamSection = document.getElementById('team-results-section');
