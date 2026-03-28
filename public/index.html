@@ -158,7 +158,20 @@
                 Random Articles
               </label>
             </div>
-            <div class="config-option">
+
+            <div class="setting-group">
+              <label>Time Limit</label>
+              <select id="setting-time-limit" class="setting-select">
+                <option value="0">None</option>
+                <option value="1">1 Minute</option>
+                <option value="2">2 Minutes</option>
+                <option value="5">5 Minutes</option>
+                <option value="10">10 Minutes</option>
+                <option value="20">20 Minutes</option>
+              </select>
+            </div>
+
+            <div class="lobby-actions">
               <label>
                 <input type="radio" name="article-source" value="custom">
                 Custom Articles
@@ -265,12 +278,10 @@
           </div>
         </div>
         <div class="game-header-center">
-          <div class="game-target">
-            <span class="target-label">Target</span>
-            <span class="target-title" id="game-target-title">---</span>
-          </div>
+          <div class="target-badge">TARGET <span id="game-target-title">...</span></div>
         </div>
         <div class="game-header-right">
+          <button id="btn-end-round" class="btn btn-warning btn-sm hidden">🚩 End Round</button>
           <button class="btn btn-ghost btn-sm" id="btn-give-up">Give Up</button>
         </div>
       </div>

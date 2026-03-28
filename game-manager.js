@@ -33,6 +33,7 @@ class GameManager {
         autoTeams: settings.autoTeams !== false,
         customStart: settings.customStart || null,
         customTarget: settings.customTarget || null,
+        timeLimit: settings.timeLimit || 0, // 0 = no limit
       },
       players: new Map(),
       teams: new Map(),

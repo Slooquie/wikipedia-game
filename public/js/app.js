@@ -22,6 +22,9 @@
     soloCustomTarget: null,
     customStart: null,
     customTarget: null,
+    timeLimit: 0,
+    timeRemaining: 0,
+    serverTimeOffset: 0,
   };
 
   // ---- Init ----
@@ -227,6 +230,7 @@
 
     // Game screen
     document.getElementById('btn-give-up').addEventListener('click', giveUp);
+    document.getElementById('btn-end-round').addEventListener('click', hostEndRound);
 
     // Results
     document.getElementById('btn-play-again').addEventListener('click', playAgain);
@@ -237,6 +241,14 @@
       overlay.addEventListener('click', (e) => {
         if (e.target === overlay) overlay.classList.remove('active');
       });
+    });
+
+    // Lobby settings
+    document.getElementById('setting-time-limit')?.addEventListener('change', (e) => {
+      if (!state.isHost) return;
+      state.socket.emit('update-settings', {
+        settings: { timeLimit: parseInt(e.target.value) }
+      }, () => {});
     });
 
     // Close search results on outside click
@@ -359,9 +371,17 @@
     if (state.isHost) {
       hostControls.classList.remove('hidden');
       guestMsg.classList.add('hidden');
+
+      // Update settings inputs to match room
+      const timeLimitEl = document.getElementById('setting-time-limit');
+      if (timeLimitEl) timeLimitEl.value = state.room.settings.timeLimit || 0;
     } else {
       hostControls.classList.add('hidden');
       guestMsg.classList.remove('hidden');
+      
+      // Update guest message to show current settings?
+      const timeLimit = state.room.settings.timeLimit ? `${state.room.settings.timeLimit} min` : 'No Limit';
+      guestMsg.querySelector('p').innerHTML = `⏳ Waiting for host... <br><small>Mode: ${state.room.settings.mode.toUpperCase()} • Time: ${timeLimit}</small>`;
     }
 
     // Team picker
@@ -499,6 +519,14 @@
     document.getElementById('game-target-title').textContent = (data.targetDisplayTitle || data.targetTitle).replace(/_/g, ' ');
 
     // Show/hide sidebar
+    // Show/hide host-only controls
+    const endRoundBtn = document.getElementById('btn-end-round');
+    if (state.isHost) {
+      endRoundBtn.classList.remove('hidden');
+    } else {
+      endRoundBtn.classList.add('hidden');
+    }
+
     const sidebar = document.getElementById('players-sidebar');
     if (mode === 'multi') {
       sidebar.classList.remove('hidden');
@@ -513,6 +541,11 @@
     // Start timer
     clearInterval(state.timerInterval);
     state.timerInterval = setInterval(updateTimer, 1000);
+
+    if (data.timeLimit > 0) {
+      state.timeRemaining = data.timeLimit * 60;
+      updateTimer(); // Initial render
+    }
 
     UI.updateBreadcrumb(state.path);
   }
@@ -614,9 +647,34 @@
 
   // ---- Timer ----
   function updateTimer() {
-    if (!state.startTime) return;
+    if (!state.startTime || !state.gameActive) return;
+    
+    const timeEl = document.getElementById('game-time');
     const elapsed = Date.now() - state.startTime;
-    document.getElementById('game-time').textContent = UI.formatTime(elapsed);
+
+    if (state.timeRemaining > 0) {
+      const remainingTotal = (state.timeRemaining * 1000) - elapsed;
+      if (remainingTotal <= 0) {
+        timeEl.textContent = '0:00';
+        timeEl.classList.add('danger');
+        return;
+      }
+      timeEl.textContent = UI.formatTime(remainingTotal);
+      if (remainingTotal < 30000) {
+        timeEl.classList.add('danger');
+      } else {
+        timeEl.classList.remove('danger');
+      }
+    } else {
+      timeEl.textContent = UI.formatTime(elapsed);
+    }
+  }
+
+  function hostEndRound() {
+    if (!state.isHost) return;
+    if (confirm('Are you sure you want to end this round for everyone?')) {
+      state.socket.emit('end-game', () => {});
+    }
   }
 
   // ---- Sidebar ----

@@ -235,15 +235,32 @@ const UI = {
       return;
     }
 
-    results.forEach(title => {
-      const div = document.createElement('div');
-      div.className = 'search-result-item';
-      div.textContent = title;
-      div.addEventListener('click', () => {
-        onSelect(title);
+    results.forEach(res => {
+      const item = document.createElement('div');
+      item.className = 'search-item';
+      
+      const thumbHtml = res.thumbnail 
+        ? `<img src="${res.thumbnail}" class="search-thumb" alt="">`
+        : `<div class="search-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem;background:var(--bg-glass)">📄</div>`;
+
+      item.innerHTML = `
+        ${thumbHtml}
+        <div class="search-info">
+          <div class="search-title">${this.escapeHtml(res.title)}</div>
+          <div class="search-desc">${this.escapeHtml(res.description || 'Wikipedia article')}</div>
+        </div>
+      `;
+
+      item.addEventListener('click', () => {
+        onSelect(res.title);
         container.classList.remove('open');
+        // Clear input to suggest selection happened
+        const input = container.previousElementSibling;
+        if (input && input.tagName === 'INPUT') {
+          input.value = res.title;
+        }
       });
-      container.appendChild(div);
+      container.appendChild(item);
     });
     container.classList.add('open');
   },

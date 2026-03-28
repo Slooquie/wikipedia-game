@@ -23,6 +23,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const WIKI_API = 'https://en.wikipedia.org/w/api.php';
 const USER_AGENT = 'WikipediaRaceGame/1.0 (https://github.com/wiki-race; contact@wikirace.game)';
+const roomTimers = new Map(); // code -> setTimeout ID
 
 async function fetchArticle(title) {
   const params = new URLSearchParams({
@@ -188,21 +189,37 @@ async function getRandomPair() {
   return { start, target };
 }
 
-// Search Wikipedia for article title suggestions
+// Search Wikipedia for article title suggestions with descriptions
 async function searchArticles(query) {
   const params = new URLSearchParams({
-    action: 'opensearch',
+    action: 'query',
     format: 'json',
-    search: query,
-    limit: '8',
-    namespace: '0',
+    generator: 'prefixsearch',
+    gpssearch: query,
+    gpslimit: '8',
+    prop: 'pageterms|pageimages',
+    piprop: 'thumbnail',
+    pithumbsize: '60',
+    pilimit: '8',
+    wbptterms: 'description',
+    formatversion: '2',
+    redirects: '1',
   });
 
   const res = await fetch(`${WIKI_API}?${params}`, {
     headers: { 'User-Agent': USER_AGENT },
   });
   const data = await res.json();
-  return data[1] || []; // Returns array of title strings
+  
+  if (!data.query || !data.query.pages) return [];
+
+  return data.query.pages
+    .sort((a, b) => a.index - b.index)
+    .map(p => ({
+      title: p.title,
+      description: p.terms?.description?.[0] || '',
+      thumbnail: p.thumbnail?.source || null,
+    }));
 }
 
 // ---------- REST API ----------
@@ -350,12 +367,26 @@ io.on('connection', (socket) => {
       // Countdown
       setTimeout(() => {
         gm.beginPlay(code);
+        
+        // Handle time limit
+        if (room.settings.timeLimit > 0) {
+          if (roomTimers.has(code)) clearTimeout(roomTimers.get(code));
+          const timeout = setTimeout(() => {
+            const results = gm.endGame(code);
+            io.to(code).emit('game-over', results);
+            roomTimers.delete(code);
+            console.log(`[Game] Room ${code}: Time limit reached`);
+          }, room.settings.timeLimit * 60 * 1000);
+          roomTimers.set(code, timeout);
+        }
+
         io.to(code).emit('game-started', {
           startHtml: startArticle.html,
           startTitle: startArticle.title,
           startDisplayTitle: startArticle.displayTitle,
           targetTitle: targetArticle.title,
           targetDisplayTitle: targetArticle.displayTitle,
+          timeLimit: room.settings.timeLimit,
         });
       }, 3500);
 
@@ -416,6 +447,10 @@ io.on('connection', (socket) => {
         if (result.allFinished) {
           const results = gm.getResults(code);
           io.to(code).emit('game-over', results);
+          if (roomTimers.has(code)) {
+            clearTimeout(roomTimers.get(code));
+            roomTimers.delete(code);
+          }
         }
       }
     } catch (err) {
@@ -442,6 +477,10 @@ io.on('connection', (socket) => {
       room.state = 'finished';
       const results = gm.getResults(code);
       io.to(code).emit('game-over', results);
+      if (roomTimers.has(code)) {
+        clearTimeout(roomTimers.get(code));
+        roomTimers.delete(code);
+      }
     } else {
       io.to(code).emit('player-gave-up', {
         playerId: socket.id,
@@ -458,6 +497,11 @@ io.on('connection', (socket) => {
     if (!code) return callback?.({ success: false });
     const room = gm.rooms.get(code);
     if (!room || room.hostId !== socket.id) return callback?.({ success: false });
+
+    if (roomTimers.has(code)) {
+      clearTimeout(roomTimers.get(code));
+      roomTimers.delete(code);
+    }
 
     const results = gm.endGame(code);
     io.to(code).emit('game-over', results);
