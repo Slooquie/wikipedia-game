@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Wikipedia Race — a multiplayer game where you race from one Wikipedia article to another by clicking links!">
+  <title>WikiRace — The Wikipedia Racing Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- ===== HOME SCREEN ===== -->
+  <section id="screen-home" class="screen active">
+    <div class="home-bg-effects">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+    </div>
+    <div class="home-container">
+      <div class="logo-section">
+        <div class="logo-icon">
+          <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="40" cy="40" r="36" stroke="url(#logoGrad)" stroke-width="3" fill="none"/>
+            <path d="M25 30 L40 20 L55 30 L55 55 L25 55 Z" stroke="url(#logoGrad)" stroke-width="2.5" fill="none" stroke-linejoin="round"/>
+            <line x1="33" y1="38" x2="47" y2="38" stroke="url(#logoGrad)" stroke-width="2" stroke-linecap="round"/>
+            <line x1="33" y1="44" x2="44" y2="44" stroke="url(#logoGrad)" stroke-width="2" stroke-linecap="round"/>
+            <line x1="33" y1="50" x2="41" y2="50" stroke="url(#logoGrad)" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="52" cy="52" r="10" stroke="url(#logoGrad)" stroke-width="2.5" fill="rgba(99,102,241,0.15)"/>
+            <line x1="59" y1="59" x2="66" y2="66" stroke="url(#logoGrad)" stroke-width="2.5" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="logoGrad" x1="0" y1="0" x2="80" y2="80">
+                <stop offset="0%" stop-color="#818cf8"/>
+                <stop offset="100%" stop-color="#c084fc"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <h1 class="logo-title">Wiki<span class="accent">Race</span></h1>
+        <p class="logo-subtitle">Race through Wikipedia. Click links. Be the fastest.</p>
+      </div>
+
+      <div class="home-actions">
+        <div class="name-input-group">
+          <label for="player-name">Your Name</label>
+          <input type="text" id="player-name" placeholder="Enter your name..." maxlength="20" autocomplete="off">
+        </div>
+
+        <button class="btn btn-primary btn-large" id="btn-solo">
+          <span class="btn-icon">🧑</span>
+          <span class="btn-content">
+            <span class="btn-label">Solo Race</span>
+            <span class="btn-desc">Race against the clock</span>
+          </span>
+        </button>
+
+        <button class="btn btn-secondary btn-large" id="btn-create-room">
+          <span class="btn-icon">🏠</span>
+          <span class="btn-content">
+            <span class="btn-label">Create Room</span>
+            <span class="btn-desc">Host a multiplayer game</span>
+          </span>
+        </button>
+
+        <button class="btn btn-tertiary btn-large" id="btn-join-room">
+          <span class="btn-icon">🚪</span>
+          <span class="btn-content">
+            <span class="btn-label">Join Room</span>
+            <span class="btn-desc">Enter a room code</span>
+          </span>
+        </button>
+      </div>
+
+      <div class="home-footer">
+        <p>Navigate from one Wikipedia article to another using only links. Fewest clicks wins!</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== JOIN ROOM MODAL ===== -->
+  <div id="modal-join" class="modal-overlay">
+    <div class="modal glass-card">
+      <button class="modal-close" id="btn-close-join">&times;</button>
+      <h2>Join a Room</h2>
+      <p>Enter the 4-character room code</p>
+      <div class="code-input-group">
+        <input type="text" id="join-code" class="code-input" maxlength="4" placeholder="ABCD" autocomplete="off">
+      </div>
+      <button class="btn btn-primary" id="btn-submit-join">Join Game</button>
+      <div id="join-error" class="error-msg"></div>
+    </div>
+  </div>
+
+  <!-- ===== CREATE ROOM MODAL ===== -->
+  <div id="modal-create" class="modal-overlay">
+    <div class="modal glass-card">
+      <button class="modal-close" id="btn-close-create">&times;</button>
+      <h2>Create a Room</h2>
+
+      <div class="create-options">
+        <div class="option-group">
+          <label>Game Mode</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" data-mode="ffa">Free for All</button>
+            <button class="toggle-btn" data-mode="teams">Teams</button>
+          </div>
+        </div>
+
+        <div id="team-options" class="option-group hidden">
+          <label>Number of Teams</label>
+          <div class="toggle-group">
+            <button class="toggle-btn active" data-teams="2">2</button>
+            <button class="toggle-btn" data-teams="3">3</button>
+            <button class="toggle-btn" data-teams="4">4</button>
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="auto-teams" checked>
+            <label for="auto-teams">Auto-assign teams</label>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="btn-submit-create">Create Room</button>
+    </div>
+  </div>
+
+  <!-- ===== LOBBY SCREEN ===== -->
+  <section id="screen-lobby" class="screen">
+    <div class="lobby-container">
+      <div class="lobby-header">
+        <button class="btn btn-ghost btn-back" id="btn-leave-room">← Leave</button>
+        <div class="room-code-display">
+          <span class="room-code-label">Room Code</span>
+          <span class="room-code-value" id="lobby-room-code">----</span>
+          <button class="btn btn-ghost btn-copy" id="btn-copy-code" title="Copy code">📋</button>
+        </div>
+      </div>
+
+      <div class="lobby-body">
+        <div class="lobby-left">
+          <h2>Players <span class="player-count" id="lobby-player-count">(0)</span></h2>
+          <div id="lobby-players" class="player-list"></div>
+
+          <div id="team-picker" class="team-picker hidden">
+            <h3>Choose Your Team</h3>
+            <div id="team-buttons" class="team-buttons"></div>
+          </div>
+        </div>
+
+        <div class="lobby-right" id="lobby-host-controls">
+          <h3>Game Settings</h3>
+          <div class="article-config">
+            <div class="config-option">
+              <label>
+                <input type="radio" name="article-source" value="random" checked>
+                Random Articles
+              </label>
+            </div>
+            <div class="config-option">
+              <label>
+                <input type="radio" name="article-source" value="custom">
+                Custom Articles
+              </label>
+            </div>
+
+            <div id="custom-articles" class="custom-articles hidden">
+              <div class="search-field">
+                <label for="custom-start">Start Article</label>
+                <input type="text" id="custom-start" placeholder="Search Wikipedia..." autocomplete="off">
+                <div class="search-results" id="start-results"></div>
+              </div>
+              <div class="search-field">
+                <label for="custom-target">Target Article</label>
+                <input type="text" id="custom-target" placeholder="Search Wikipedia..." autocomplete="off">
+                <div class="search-results" id="target-results"></div>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-large btn-start" id="btn-start-game">
+            🏁 Start Race
+          </button>
+        </div>
+      </div>
+
+      <div id="lobby-guest-msg" class="lobby-guest-message hidden">
+        <p>⏳ Waiting for the host to start the game...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== SOLO SETUP SCREEN ===== -->
+  <section id="screen-solo-setup" class="screen">
+    <div class="solo-setup-container">
+      <button class="btn btn-ghost btn-back" id="btn-back-solo">← Back</button>
+      <h2>Solo Race Setup</h2>
+
+      <div class="article-config">
+        <div class="config-option">
+          <label>
+            <input type="radio" name="solo-source" value="random" checked>
+            Random Articles
+          </label>
+        </div>
+        <div class="config-option">
+          <label>
+            <input type="radio" name="solo-source" value="custom">
+            Custom Articles
+          </label>
+        </div>
+
+        <div id="solo-custom-articles" class="custom-articles hidden">
+          <div class="search-field">
+            <label for="solo-custom-start">Start Article</label>
+            <input type="text" id="solo-custom-start" placeholder="Search Wikipedia..." autocomplete="off">
+            <div class="search-results" id="solo-start-results"></div>
+          </div>
+          <div class="search-field">
+            <label for="solo-custom-target">Target Article</label>
+            <input type="text" id="solo-custom-target" placeholder="Search Wikipedia..." autocomplete="off">
+            <div class="search-results" id="solo-target-results"></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-large btn-start" id="btn-start-solo">
+        🏁 Start Solo Race
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== COUNTDOWN OVERLAY ===== -->
+  <div id="countdown-overlay" class="countdown-overlay hidden">
+    <div class="countdown-content">
+      <div class="countdown-articles">
+        <div class="countdown-article">
+          <span class="countdown-label">FROM</span>
+          <span class="countdown-title" id="countdown-start">---</span>
+        </div>
+        <div class="countdown-arrow">→</div>
+        <div class="countdown-article">
+          <span class="countdown-label">TO</span>
+          <span class="countdown-title" id="countdown-target">---</span>
+        </div>
+      </div>
+      <div class="countdown-number" id="countdown-number">3</div>
+    </div>
+  </div>
+
+  <!-- ===== GAME SCREEN ===== -->
+  <section id="screen-game" class="screen">
+    <div class="game-container">
+      <!-- Game Header -->
+      <div class="game-header">
+        <div class="game-header-left">
+          <div class="game-stat">
+            <span class="stat-label">Clicks</span>
+            <span class="stat-value" id="game-clicks">0</span>
+          </div>
+          <div class="game-stat">
+            <span class="stat-label">Time</span>
+            <span class="stat-value" id="game-time">0:00</span>
+          </div>
+        </div>
+        <div class="game-header-center">
+          <div class="game-target">
+            <span class="target-label">Target</span>
+            <span class="target-title" id="game-target-title">---</span>
+          </div>
+        </div>
+        <div class="game-header-right">
+          <button class="btn btn-ghost btn-sm" id="btn-give-up">Give Up</button>
+        </div>
+      </div>
+
+      <!-- Article Breadcrumb -->
+      <div class="game-breadcrumb">
+        <div class="breadcrumb-path" id="game-path"></div>
+      </div>
+
+      <!-- Main Game Area -->
+      <div class="game-body">
+        <div class="article-panel">
+          <div class="article-title-bar">
+            <h1 id="article-title">Loading...</h1>
+          </div>
+          <div class="article-content" id="article-content">
+            <div class="loading-spinner">
+              <div class="spinner"></div>
+              <p>Loading article...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Player Sidebar (multiplayer only) -->
+        <div class="players-sidebar hidden" id="players-sidebar">
+          <h3>🏁 Racers</h3>
+          <div id="sidebar-players" class="sidebar-players"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== RESULTS SCREEN ===== -->
+  <section id="screen-results" class="screen">
+    <div class="results-container">
+      <div class="results-header">
+        <h1 id="results-title">🏆 Race Complete!</h1>
+        <div class="results-route">
+          <span id="results-start">---</span>
+          <span class="results-arrow">→</span>
+          <span id="results-target">---</span>
+        </div>
+      </div>
+
+      <!-- Solo Results -->
+      <div id="solo-results" class="solo-results hidden">
+        <div class="result-cards">
+          <div class="result-card">
+            <span class="result-card-label">Clicks</span>
+            <span class="result-card-value" id="result-clicks">0</span>
+          </div>
+          <div class="result-card">
+            <span class="result-card-label">Time</span>
+            <span class="result-card-value" id="result-time">0:00</span>
+          </div>
+        </div>
+        <div class="result-path">
+          <h3>Your Path</h3>
+          <div id="result-path-display" class="path-display"></div>
+        </div>
+      </div>
+
+      <!-- Multiplayer Results -->
+      <div id="multi-results" class="multi-results hidden">
+        <div id="team-results-section" class="team-results hidden">
+          <h2>Team Standings</h2>
+          <div id="team-results" class="team-results-list"></div>
+        </div>
+
+        <h2>Individual Results</h2>
+        <div id="player-results" class="player-results-list"></div>
+      </div>
+
+      <div class="results-actions">
+        <button class="btn btn-primary" id="btn-play-again">Play Again</button>
+        <button class="btn btn-secondary" id="btn-back-home">Back to Home</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== WIN CELEBRATION ===== -->
+  <div id="win-overlay" class="win-overlay hidden">
+    <div class="win-content">
+      <div class="win-emoji">🎉</div>
+      <h1>You Found It!</h1>
+      <p id="win-stats"></p>
+    </div>
+  </div>
+
+  <!-- ===== TOAST CONTAINER ===== -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
